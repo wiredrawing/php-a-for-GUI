@@ -1,7 +1,6 @@
-<?php echo file_get_contents("https://nasse.com/fukuoka");
+<?php 
 
+phpinfo();
 
-
-
-var_dump("============");
+echo ("===================");
  ?>

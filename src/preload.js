@@ -7,13 +7,15 @@ const { contextBridge, ipcRenderer } = require('electron/renderer')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   setTitle: (title) => ipcRenderer.send('set-title', title),
-  sendEmail: (packet) => ipcRenderer.send('send-email', packet),
-  toMainProcess: (message) => ipcRenderer.invoke('to-main-process', message),
   executePHP: (message) => ipcRenderer.invoke('execute-php', message),
   selectPHPExecutable: () => ipcRenderer.invoke('select-php-executable'),
   selectCwd: () => ipcRenderer.invoke('select-cwd'),
+  completedSelectingPHPExecutable: (callback) => ipcRenderer.on('completed-selecting-php-executable', function (event, path) {
+    console.log("completedSelectingPHPExecutable: ", path);
+    return callback(event, path);
+  }),
+  completedSelectingCwd: (callback) => ipcRenderer.on('completed-selecting-cwd', function (event, path) {
+    console.log("completedSelectingCwd: ", path);
+    return callback(event, path);
+  }),
 })
-
-ipcRenderer.on("receive-email", (event, message) => {
-  console.log(message);
-});

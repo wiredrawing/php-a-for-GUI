@@ -71,19 +71,14 @@
   </head>
   <body>
 
-
-
-    <!-- Title: <input id="title"/> -->
-    <!-- <button id="btn" type="button">Set</button> -->
-
-
-    <div>
-      <h4 id="selectCwd">PHPを実行させたいディレクトリを指定する</h4>
+    <div style="margin-top: 5rem;">
+      <p>選択中のPHP実行パス</p>
+      <p id="current-php-version"></p>
+      <hr>
+      <p>選択中のPHP実行パス</p>
+      <p id="current-working-directory"></p>
     </div>
 
-    <div>
-      <input type="button" id="selectPHPExecutable" value="PHPの実行ファイルを指定する">
-    </div>
 
 
 
@@ -97,6 +92,7 @@
         <td><pre id="php-response"></pre></td>
       </tr>
     </table>
+
 
     <script>
 

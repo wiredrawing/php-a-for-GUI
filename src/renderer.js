@@ -1,42 +1,4 @@
-// const setButton = document.getElementById('btn')
-// const titleInput = document.getElementById('title')
-// setButton.addEventListener('click', () => {
-//   const title = titleInput.value
-//   window.electronAPI.setTitle(title)
-// })
 
-
-// // メール送信ボタン
-// const sendEmailButton = document.getElementById('send-email')
-
-// console.log(sendEmailButton)
-//
-// sendEmailButton.addEventListener('click', () => {
-//   // メッセージボックスの値を取得
-//   const message = document.getElementById('email-message').value
-//   const title = document.getElementById('email-title').value
-//   alert(message);
-//   const packet = {
-//     message: message,
-//     title: title
-//   }
-//   const response = window.electronAPI.sendEmail(packet)
-//   window.electronAPI.anything();
-//
-// });
-
-
-// const toMainProcess = document.getElementById("to-main-process");
-// console.log(toMainProcess);
-// // 入力内容が変更されたら、メインプロセスに通知する
-// toMainProcess.addEventListener("keyup", (e) => {
-//   window.electronAPI.toMainProcess(e.target.value).then(function (data) {
-//     const responseDom = document.getElementById("response");
-//     responseDom.textContent = data;
-//   }).catch(function (err) {
-//     console.log(err);
-//   });
-// });
 
 const phpMessage = document.getElementById("php");
 const responseDom = document.getElementById("php-response");
@@ -73,27 +35,39 @@ phpMessage.addEventListener("keyup", (e) => {
 });
 
 
-const phpFile = document.getElementById("selectPHPExecutable");
-phpFile.addEventListener("click", (e) => {
-  console.log(e);
-  console.log(e.target);
-  console.log(e.target.value);
-  window.electronAPI.selectPHPExecutable().then(function (data) {
-    console.log("data ===> ", data, "<=== end data");
-  }).catch(function(error) {
-    console.log("Error: ", error);
-  });
+// const phpFile = document.getElementById("selectPHPExecutable");
+// phpFile.addEventListener("click", (e) => {
+//   console.log(e);
+//   console.log(e.target);
+//   console.log(e.target.value);
+//   window.electronAPI.selectPHPExecutable().then(function (data) {
+//     console.log("data ===> ", data, "<=== end data");
+//   }).catch(function(error) {
+//     console.log("Error: ", error);
+//   });
+// });
+
+
+// const selectCwd = document.getElementById("selectCwd");
+// selectCwd.addEventListener("click", (e) => {
+//   console.log(e);
+//   console.log(e.target);
+//   console.log(e.target.value);
+//   window.electronAPI.selectCwd().then(function (data) {
+//     console.log("data ===> ", data, "<=== end data");
+//   }).catch(function(error) {
+//     console.log("Error: ", error);
+//   });
+// });
+
+
+// メインプロセスからの通知を常に監視してくれる
+const currentPHPVersion = document.getElementById("current-php-version");
+window.electronAPI.completedSelectingPHPExecutable(function(e, path ){
+  currentPHPVersion.innerHTML = path;
 });
 
-
-const selectCwd = document.getElementById("selectCwd");
-selectCwd.addEventListener("click", (e) => {
-  console.log(e);
-  console.log(e.target);
-  console.log(e.target.value);
-  window.electronAPI.selectCwd().then(function (data) {
-    console.log("data ===> ", data, "<=== end data");
-  }).catch(function(error) {
-    console.log("Error: ", error);
-  });
+const currentCwd = document.getElementById("current-working-directory");
+window.electronAPI.completedSelectingCwd(function(e, path ) {
+  currentCwd.innerHTML = path;
 });

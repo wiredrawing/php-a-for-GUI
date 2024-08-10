@@ -1,8 +1,6 @@
-const {app, BrowserWindow, ipcMain, dialog} = require('electron');
+const {app, BrowserWindow, ipcMain, dialog, Menu} = require('electron');
 const path = require('node:path');
 const exec = require('child_process').exec;
-// メール配信用module
-const nm = require('nodemailer');
 const fs = require("fs");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -35,6 +33,7 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+    title: "PHPインタラクティブシェル"
   });
 
 
@@ -52,8 +51,7 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 
   // PHP実行ファイルが指定された場合の処理
-  ipcMain.handle("select-php-executable", (event) => {
-    console.log("select-php-executable: event => ", event);
+  function selectPhpExecutable(event) {
     return dialog
     .showOpenDialog(mainWindow, {
       properties: ['openFile'],
@@ -70,12 +68,12 @@ const createWindow = () => {
       if (result.canceled) return;
       // ここでPHP実行ファイルのパスを取得する
       phpPath = result.filePaths[0];
-      return result.filePaths[0];
     })
     .catch((err) => console.log(`Error: ${err}`));
-  });
+  }
+  ipcMain.handle("select-php-executable", selectPhpExecutable);
 
-
+  return mainWindow;
 };
 
 // This method will be called when Electron has finished
@@ -87,51 +85,6 @@ app.whenReady().then(() => {
 
 
   ipcMain.on('set-title', handleSetTitle)
-  ipcMain.handle("send-email", (event, packet) => {
-    const webContents = event.sender
-    const win = BrowserWindow.fromWebContents(webContents);
-
-
-    const password = '4xZ5JgvarQnXnepkGD83epTkwHvSq8SUmH6LqpzAUiuBYup6Fwz2jW5APFfaGmqHSNzm7jDSTsCP4bg3';
-    let transporter = nm.createTransport({
-      host: "smtp.sunmark.bz",
-      port: 587,
-      secure: false,
-      auth: {
-        user: "a-senbiki",
-        pass: password,
-      }
-    });
-
-
-    // 配信先リスト
-    const emailList = [
-      // "akifumi.senbiki.1209@gmail.com",
-      // "senbiki.iyonkami.akifumi.1209@gmail.com",
-      "akifumi.senbiki.1209@ymobile.ne.jp",
-    ]
-
-
-    transporter.verify().then((data) => {
-      console.log(data);
-      console.log("Connection established");
-
-      emailList.forEach(function (email) {
-        // メール配信処理
-        transporter.sendMail({
-          from: "noreply@sunmark.bz",
-          to: email,
-          text: packet.message,
-          subject: packet.title,
-          html: packet.message,
-        }).then((info) => {
-          console.log(info);
-        });
-      });
-    }).catch((err) => {
-      console.log(err);
-    });
-  })
   ipcMain.handle("to-main-process", function (event, message) {
     return "The message that you sent is: " + message;
   });
@@ -201,7 +154,68 @@ app.whenReady().then(() => {
     });
     return promise;
   });
-  createWindow();
+  const mainWindow = createWindow();
+
+  const template = [
+    {
+      label: '設定',
+      submenu: [
+        {
+          label: 'PHP実行ファイルを選択する',
+          click: function () {
+            return dialog
+            .showOpenDialog(mainWindow, {
+              properties: ['openFile'],
+              title: 'ファイルを選択する',
+              filters: [
+                {
+                  name: 'PHP実行ファイルパス',
+                  extensions: ["exe"],
+                },
+              ],
+            })
+            .then((result) => {
+              console.log("select php executable result: ==>", result);
+              if (result.canceled) return;
+              // ここでPHP実行ファイルのパスを取得する
+              phpPath = result.filePaths[0];
+              return phpPath
+            }).then(function(data) {
+              return mainWindow.webContents.send("completed-selecting-php-executable", data);
+            })
+            .catch((err) => console.log(`Error: ${err}`));
+          }
+        },
+        {
+          label: 'PHPの実行ディレクトリを選択する',
+          click: function() {
+            // 現在操作中のブラウザobjectを取得する
+            return dialog.showOpenDialog(mainWindow, {
+              properties: ['openDirectory'],
+              title: 'ディレクトリを選択する',
+            }).then((result) => {
+              if (result.canceled) return;
+              // ここでディレクトリのパスを取得する
+              cwd = result.filePaths[0];
+              console.log("cwd => ", cwd)
+              return result.filePaths[0];
+            }).then(function(data) {
+              return mainWindow.webContents.send("completed-selecting-cwd", data);
+            }).catch((err) =>  {
+              console.log(`Error: ${err}`)
+            })
+          }
+        },
+        {
+          label: 'Codeingter',
+          click () { mainWindow.loadURL('https://www.kabanoki.net/category/codeingter'); }
+        }
+      ]
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
