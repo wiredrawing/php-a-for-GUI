@@ -156,6 +156,7 @@ app.whenReady().then(() => {
   });
   const mainWindow = createWindow();
 
+  // GUI上のメニューバーを設定する
   const template = [
     {
       label: '設定',
@@ -212,6 +213,18 @@ app.whenReady().then(() => {
         }
       ]
     },
+    {
+      label: 'ヘルプ',
+      submenu:[
+        {
+          label: "検証ツール",
+          click: function () {
+            // Open the DevTools.
+            mainWindow.webContents.openDevTools();
+          }
+        }
+      ]
+    },
   ];
 
   const menu = Menu.buildFromTemplate(template)
@@ -241,10 +254,10 @@ app.on('window-all-closed', () => {
 // 指定した 引数の内容をHTMLとして表示したさい
 // 平文と同じ見え方になるようにフォーマットする
 function formatResponseAsHtml(message) {
-  return message
-    // .replace(/\r\n|\n/g, "<br>")
+  let temp = message
     .replace(/ /g, "&nbsp;")
     .replace(/　/g, "&emsp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
+  return temp.replace(/\r\n|\n/g, "<br>")
 }
