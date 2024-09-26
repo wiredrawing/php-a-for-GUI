@@ -1,6 +1,17 @@
 <?php 
+$f = function () {
+	return get_class($this);
+};
 
-phpinfo();
 
-echo ("===================");
+try {
+	
+	echo $f;
+
+} catch(Throwable $e) {
+	echo $e->getMessage();
+}
+
+
+
  ?>

@@ -2,6 +2,7 @@ const {app, BrowserWindow, ipcMain, dialog, Menu} = require('electron');
 const path = require('node:path');
 const exec = require('child_process').exec;
 const fs = require("fs");
+const fsPromises = require("fs").promises;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -24,6 +25,7 @@ function toMainProcess(event, message) {
 
 
 let phpPath = null;
+// 作業用ディレクトリの指定
 let cwd = process.cwd();
 const createWindow = () => {
   // Create the browser window.
@@ -72,6 +74,29 @@ const createWindow = () => {
     .catch((err) => console.log(`Error: ${err}`));
   }
   ipcMain.handle("select-php-executable", selectPhpExecutable);
+
+  // 一時ソースの保存処理
+  ipcMain.handle("save-temp-source", function (event, tempSource) {
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!tempSource: ", tempSource);
+    const fileName = "temp.php";
+    const filePath = path.join(cwd, fileName);
+    return fsPromises.writeFile(filePath, tempSource).then(function (data) {
+      console.log("data: ", data);
+      return true;
+    }).catch(function (error) {
+      console.log("error: ", error);
+      return false;
+    })
+  });
+
+  // 何かしらんメッセージを表示する
+  ipcMain.handle("show-notification-message", function (event, message) {
+    return dialog.showMessageBox(mainWindow, {
+      message: message,
+      buttons: ["OK"],
+      title: "通知",
+    });
+  });
 
   return mainWindow;
 };
@@ -195,11 +220,25 @@ app.whenReady().then(() => {
               properties: ['openDirectory'],
               title: 'ディレクトリを選択する',
             }).then((result) => {
-              if (result.canceled) return;
+              if (result.canceled) {
+                return "";
+              }
               // ここでディレクトリのパスを取得する
               cwd = result.filePaths[0];
               console.log("cwd => ", cwd)
-              return result.filePaths[0];
+              // 実行ディレクトリのパスが確定したら隠しディレクトリを作成する
+              let createdAt = "";
+              let today = new Date();
+              createdAt = today.getFullYear() + "-" + today.getMonth() + "-" + today.getDate();
+              // 作成した日にちの隠しディレクトリを作成する
+              let hiddenDir = path.join(cwd, "." + createdAt);
+              return fsPromises.mkdir(hiddenDir, {recursive: true}).then(function (isCreated) {
+                console.log("作業用隠しディレクトリの作成に成功しました");
+                return Promise.resolve(result.filePaths[0]);
+              }).catch((err) => {
+                console.log(`Error: ${err}`)
+                return Promise.reject(new Error(err))
+              });
             }).then(function(data) {
               return mainWindow.webContents.send("completed-selecting-cwd", data);
             }).catch((err) =>  {

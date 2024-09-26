@@ -8,6 +8,13 @@ const { contextBridge, ipcRenderer } = require('electron/renderer')
 contextBridge.exposeInMainWorld('electronAPI', {
   setTitle: (title) => ipcRenderer.send('set-title', title),
   executePHP: (message) => ipcRenderer.invoke('execute-php', message),
+  // 一時ソース保存コマンド
+  saveTempSource: function(soruceData) {
+    return ipcRenderer.invoke("save-temp-source", soruceData);
+  },
+  showNotificationMessage: function(message) {
+    return ipcRenderer.invoke("show-notification-message", message);
+  },
   selectPHPExecutable: () => ipcRenderer.invoke('select-php-executable'),
   selectCwd: () => ipcRenderer.invoke('select-cwd'),
   completedSelectingPHPExecutable: (callback) => ipcRenderer.on('completed-selecting-php-executable', function (event, path) {

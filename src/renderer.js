@@ -2,6 +2,8 @@
 
 const phpMessage = document.getElementById("php");
 const responseDom = document.getElementById("php-response");
+// 一時ソースを保存するボタン
+const saveTempSource = document.getElementById("save-temp-source");
 phpMessage.addEventListener("keyup", (e) => {
   if (e.key !== "Enter" || e.ctrlKey) {
     return false;
@@ -32,6 +34,28 @@ phpMessage.addEventListener("keyup", (e) => {
     responseDom.innerHTML = ">>>>" + error.message;
     return false;
   })
+});
+
+
+saveTempSource.addEventListener("click", function (e) {
+  let sourceData  = document.getElementById("php").value;
+  const cwd = document.getElementById("current-working-directory");
+  if (cwd.innerHTML === "") {
+    console.log("作業ディレクトリが設定されていない場合は一時保存できません。");
+    window.electronAPI.showNotificationMessage("作業ディレクトリが設定されていません。").then(function (data) {
+      document.getElementById("php").focus();
+      return true;
+    }).catch(function (error) {
+      console.log("Error: ", error);
+      return false;
+    });
+  } else {
+    window.electronAPI.saveTempSource(sourceData).then(function (isSaved) {
+      return true;
+    }).catch(error => {
+      return false;
+    })
+  }
 });
 
 
