@@ -6,6 +6,10 @@
 const { contextBridge, ipcRenderer } = require('electron/renderer')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // サブウィンドウで入力して、実行した実行結果をメインウインドウへ送信する処理
+  sendingResultToMainWindow: function (result) {
+    return ipcRenderer.invoke('sending-executed-result', result);
+  },
   setTitle: (title) => ipcRenderer.send('set-title', title),
   executePHP: (message) => ipcRenderer.invoke('execute-php', message),
   // 一時ソース保存コマンド
@@ -25,4 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log("completedSelectingCwd: ", path);
     return callback(event, path);
   }),
+  displayingExecutedResult: function (callback) {
+    ipcRenderer.on("displaying-executed-result", function(event, result) {
+      return callback(event, result);
+    });
+  },
 })

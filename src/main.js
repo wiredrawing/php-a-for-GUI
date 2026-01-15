@@ -4,6 +4,16 @@ const exec = require('child_process').exec;
 const fs = require("fs");
 const fsPromises = require("fs").promises;
 
+/*
+*
+* 第一引数がおそらく監視したいディレクトリフォルダ
+* 第二引数がおそらくElectronの実行フォルダ
+*
+* */
+// require('electron-reload')(__dirname, {
+//   electron: require('${__dirname}/../../node_modules/electron')
+// });
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -27,6 +37,26 @@ function toMainProcess(event, message) {
 let phpPath = null;
 // 作業用ディレクトリの指定
 let cwd = process.cwd();
+let secondWindow ;
+function createSecondWindow() {
+  secondWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    }
+  });
+
+  // 2つ目のウィンドウに second.html (仮定) をロード
+  // second.html が存在しない場合は作成してください
+  secondWindow.loadFile(path.join(__dirname, 'sub.html'));
+
+  // ウィンドウが閉じられたときに参照をクリア
+  secondWindow.on('closed', () => {
+    secondWindow = null;
+  });
+  return secondWindow;
+}
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -49,8 +79,11 @@ const createWindow = () => {
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
+  // -----------------------------------------------------------
+  // 初回起動時に、検証ツールを表示する場合は、、コメントアウトをはずす
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // -----------------------------------------------------------
+  // mainWindow.webContents.openDevTools();
 
   // PHP実行ファイルが指定された場合の処理
   function selectPhpExecutable(event) {
@@ -105,10 +138,6 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-
-
-
-
   ipcMain.on('set-title', handleSetTitle)
   ipcMain.handle("to-main-process", function (event, message) {
     return "The message that you sent is: " + message;
@@ -126,12 +155,12 @@ app.whenReady().then(() => {
       cwd = result.filePaths[0];
       console.log("cwd => ", cwd)
       return result.filePaths[0];
-    }).catch((err) =>  {
+    }).catch((err) => {
       console.log(`Error: ${err}`)
     })
   });
   ipcMain.handle("execute-php", function (event, message) {
-    const promise =  new Promise((resolve, reject) => {
+    const promise = new Promise((resolve, reject) => {
       const fileNameExecuted = path.join(cwd, ".executed.php");
       message = "<?php " + message + " ?>";
       if (fs.existsSync(fileNameExecuted)) {
@@ -156,7 +185,7 @@ app.whenReady().then(() => {
       return exec(selectedPHPPath + " " + fileNameExecuted, {
         // 実行ディレクトリを指定する
         cwd: cwd,
-      },function (error, stdout, stderr) {
+      }, function (error, stdout, stderr) {
         if (error) {
           console.log("error.code ==> ", error.code)
           console.log("=============");
@@ -180,94 +209,109 @@ app.whenReady().then(() => {
     return promise;
   });
   const mainWindow = createWindow();
+  const subWindow = createSecondWindow();
 
+
+  ipcMain.handle("sending-executed-result", function(event, result) {
+    return mainWindow.webContents.send("displaying-executed-result", result);
+  });
   // GUI上のメニューバーを設定する
-  const template = [
-    {
-      label: '設定',
-      submenu: [
-        {
-          label: 'PHP実行ファイルを選択する',
-          click: function () {
-            return dialog
-            .showOpenDialog(mainWindow, {
-              properties: ['openFile'],
-              title: 'ファイルを選択する',
-              filters: [
-                {
-                  name: 'PHP実行ファイルパス',
-                  extensions: ["exe"],
-                },
-              ],
-            })
-            .then((result) => {
-              console.log("select php executable result: ==>", result);
-              if (result.canceled) return;
-              // ここでPHP実行ファイルのパスを取得する
-              phpPath = result.filePaths[0];
-              return phpPath
-            }).then(function(data) {
-              return mainWindow.webContents.send("completed-selecting-php-executable", data);
-            })
-            .catch((err) => console.log(`Error: ${err}`));
-          }
-        },
-        {
-          label: 'PHPの実行ディレクトリを選択する',
-          click: function() {
-            // 現在操作中のブラウザobjectを取得する
-            return dialog.showOpenDialog(mainWindow, {
-              properties: ['openDirectory'],
-              title: 'ディレクトリを選択する',
-            }).then((result) => {
-              if (result.canceled) {
-                return "";
-              }
-              // ここでディレクトリのパスを取得する
-              cwd = result.filePaths[0];
-              console.log("cwd => ", cwd)
-              // 実行ディレクトリのパスが確定したら隠しディレクトリを作成する
-              let createdAt = "";
-              let today = new Date();
-              createdAt = today.getFullYear() + "-" + today.getMonth() + "-" + today.getDate();
-              // 作成した日にちの隠しディレクトリを作成する
-              let hiddenDir = path.join(cwd, "." + createdAt);
-              return fsPromises.mkdir(hiddenDir, {recursive: true}).then(function (isCreated) {
-                console.log("作業用隠しディレクトリの作成に成功しました");
-                return Promise.resolve(result.filePaths[0]);
+  function setTemplate(__window) {
+    return [
+      {
+        label: '設定',
+        submenu: [
+          {
+            label: 'PHP実行ファイルを選択する',
+            click: function () {
+              return dialog
+              .showOpenDialog(__window, {
+                properties: ['openFile'],
+                title: 'ファイルを選択する',
+                filters: [
+                  {
+                    name: 'PHP実行ファイルパス',
+                    extensions: ["exe"],
+                  },
+                ],
+              })
+              .then((result) => {
+                console.log("select php executable result: ==>", result);
+                if (result.canceled) return;
+                // ここでPHP実行ファイルのパスを取得する
+                phpPath = result.filePaths[0];
+                return phpPath
+              }).then(function (data) {
+                return __window.webContents.send("completed-selecting-php-executable", data);
+              })
+              .catch((err) => console.log(`Error: ${err}`));
+            }
+          },
+          {
+            label: 'PHPの実行ディレクトリを選択する',
+            click: function () {
+              // 現在操作中のブラウザobjectを取得する
+              return dialog.showOpenDialog(__window, {
+                properties: ['openDirectory'],
+                title: 'ディレクトリを選択する',
+              }).then((result) => {
+                if (result.canceled) {
+                  return "";
+                }
+                // ここでディレクトリのパスを取得する
+                cwd = result.filePaths[0];
+                console.log("cwd => ", cwd)
+                // 実行ディレクトリのパスが確定したら隠しディレクトリを作成する
+                let createdAt = "";
+                let today = new Date();
+                createdAt = today.getFullYear() + "-" + today.getMonth() + "-" + today.getDate();
+                // 作成した日にちの隠しディレクトリを作成する
+                let hiddenDir = path.join(cwd, "." + createdAt);
+                return fsPromises.mkdir(hiddenDir, {recursive: true}).then(function (isCreated) {
+                  console.log("作業用隠しディレクトリの作成に成功しました");
+                  return Promise.resolve(result.filePaths[0]);
+                }).catch((err) => {
+                  console.log(`Error: ${err}`)
+                  return Promise.reject(new Error(err))
+                });
+              }).then(function (data) {
+                return __window.webContents.send("completed-selecting-cwd", data);
               }).catch((err) => {
                 console.log(`Error: ${err}`)
-                return Promise.reject(new Error(err))
-              });
-            }).then(function(data) {
-              return mainWindow.webContents.send("completed-selecting-cwd", data);
-            }).catch((err) =>  {
-              console.log(`Error: ${err}`)
-            })
+              })
+            }
+          },
+          {
+            label: 'Codeingter',
+            click() {
+              __window.loadURL('https://www.kabanoki.net/category/codeingter');
+            }
           }
-        },
-        {
-          label: 'Codeingter',
-          click () { mainWindow.loadURL('https://www.kabanoki.net/category/codeingter'); }
-        }
-      ]
-    },
-    {
-      label: 'ヘルプ',
-      submenu:[
-        {
-          label: "検証ツール",
-          click: function () {
-            // Open the DevTools.
-            mainWindow.webContents.openDevTools();
+        ]
+      },
+      {
+        label: 'ヘルプ',
+        submenu: [
+          {
+            label: "検証ツール",
+            click: function () {
+              // Open the DevTools.
+              __window.webContents.openDevTools();
+            }
           }
-        }
-      ]
-    },
-  ];
+        ]
+      },
+    ];
+  };
 
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  const __mainTemplate = setTemplate(mainWindow);
+  const __subTemplate = setTemplate(subWindow);
+
+
+  const mainMenu = Menu.buildFromTemplate(__mainTemplate)
+  const subMakin = Menu.buildFromTemplate(__subTemplate);
+  Menu.setApplicationMenu(mainMenu)
+  Menu.setApplicationMenu(subMakin)
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.

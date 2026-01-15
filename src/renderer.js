@@ -4,37 +4,37 @@ const phpMessage = document.getElementById("php");
 const responseDom = document.getElementById("php-response");
 // 一時ソースを保存するボタン
 const saveTempSource = document.getElementById("save-temp-source");
-phpMessage.addEventListener("keyup", (e) => {
-  if (e.key !== "Enter" || e.ctrlKey) {
-    return false;
-  }
-  responseDom.innerHTML = ""
-  window.electronAPI.executePHP(e.target.value).then(function (data) {
-    console.log("data ===> ", data, "<=== end data");
-    if (data["stdout"]) {
-      responseDom.innerHTML = data["stdout"]
-      responseDom.classList.remove('error') //hideという要素をinfoのクラスに追加する
-    } else {
-      if (data["stderr"]) {
-        responseDom.innerHTML = data["stderr"]
-        if (!responseDom.classList.contains('error')) { ////hideという要素がinfoにない場合に実行する。そうしないとたくさん追加されるため
-          responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する
-        }
-      }
-    }
-    const scrollTarget = document.getElementById("php-response");
-    scrollTarget.scrollTop = scrollTarget.scrollHeight;
-    return true
-  }).catch(error => {
-    console.log("Renderer error ===> ", error, "<== End Renderer Error");
-    if (!responseDom.classList.contains("error")) {
-      responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する]
-    }
-
-    responseDom.innerHTML = ">>>>" + error.message;
-    return false;
-  })
-});
+// phpMessage.addEventListener("keyup", (e) => {
+//   if (e.key !== "Enter" || e.ctrlKey) {
+//     return false;
+//   }
+//   responseDom.innerHTML = ""
+//   window.electronAPI.executePHP(e.target.value).then(function (data) {
+//     console.log("data ===> ", data, "<=== end data");
+//     if (data["stdout"]) {
+//       responseDom.innerHTML = data["stdout"]
+//       responseDom.classList.remove('error') //hideという要素をinfoのクラスに追加する
+//     } else {
+//       if (data["stderr"]) {
+//         responseDom.innerHTML = data["stderr"]
+//         if (!responseDom.classList.contains('error')) { ////hideという要素がinfoにない場合に実行する。そうしないとたくさん追加されるため
+//           responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する
+//         }
+//       }
+//     }
+//     const scrollTarget = document.getElementById("php-response");
+//     scrollTarget.scrollTop = scrollTarget.scrollHeight;
+//     return true
+//   }).catch(error => {
+//     console.log("Renderer error ===> ", error, "<== End Renderer Error");
+//     if (!responseDom.classList.contains("error")) {
+//       responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する]
+//     }
+//
+//     responseDom.innerHTML = ">>>>" + error.message;
+//     return false;
+//   })
+// });
 
 
 saveTempSource.addEventListener("click", function (e) {
@@ -94,4 +94,24 @@ window.electronAPI.completedSelectingPHPExecutable(function(e, path ){
 const currentCwd = document.getElementById("current-working-directory");
 window.electronAPI.completedSelectingCwd(function(e, path ) {
   currentCwd.innerHTML = path;
+});
+
+window.electronAPI.displayingExecutedResult(function (e, result) {
+  console.log("サブウインドウで、入力された実行結果");
+  console.log(result);
+  console.log("data ===> ", result, "<=== end data");
+  if (result["stdout"]) {
+    responseDom.innerHTML = result["stdout"]
+    responseDom.classList.remove('error') //hideという要素をinfoのクラスに追加する
+  } else {
+    if (result["stderr"]) {
+      responseDom.innerHTML = result["stderr"]
+      if (!responseDom.classList.contains('error')) { ////hideという要素がinfoにない場合に実行する。そうしないとたくさん追加されるため
+        responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する
+      }
+    }
+  }
+  const scrollTarget = document.getElementById("php-response");
+  scrollTarget.scrollTop = scrollTarget.scrollHeight;
+  return true
 });
