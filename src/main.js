@@ -50,7 +50,8 @@ const createWindow = () => {
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // 検証ツール
+  // mainWindow.webContents.openDevTools();
 
   // PHP実行ファイルが指定された場合の処理
   function selectPhpExecutable(event) {
