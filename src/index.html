@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8"/>
     <title>Hello World! これはElectronアプリケーション 第一号です.</title>
-    <link rel="stylesheet" href="./index.css"/>
+    <link rel="stylesheet" href="./dist/css/bootstrap.css"/>
+    <script type="text/javascript" src="./dist/js/bootstrap.bundle.js"></script>
+    <script type="text/javascript" src="./dist/js/bootstrap.js"></script>
     <style>
       * {
         font-family: "Helvetica Neue",
@@ -14,75 +16,55 @@
         sans-serif;
         /*font-family: 'ヒラギノ角ゴ Pro W3','Hiragino Kaku Gothic Pro',Osaka,Verdana, Segoe WPC, Segoe UI, Yu Gothic UI, Meiryo UI, sans-serif;*/
         font-weight: 450 !important;
-        font-size: 12pt !important;
+        font-size: 11pt !important;
         /*letter-spacing: 0.05rem;*/
         margin: 0;
         padding: 0;
         tab-size: 4;
       }
 
-      body {
-        width: 98%;
-        /*border: 1px solid #000;*/
-        margin: 1% auto;
-        padding: 0;
-      }
-
-      table {
-        width: 100%;
-        /*border: 1pt solid #000;*/
-        border-collapse: collapse;
-        padding: 0.3rem;
-        margin-bottom: 1rem;
-        table-layout: fixed;
-      }
-
-      tr {
-        /*border: 1px solid #000;*/
-        border-collapse: collapse;
-        padding: 0.3rem !important;
-      }
-
-      td, th {
-        /*border: 1pt solid #000;*/
-        /*border-collapse: collapse;*/
-        /*padding: 0.3rem !important;*/
-        maring: 0;
-        width: 50% !important;
-      }
-
-      /*textarea {*/
-      /*  width: 100%;*/
+      /*body {*/
+      /*  width: 98%;*/
+      /*  !*border: 1px solid #000;*!*/
+      /*  margin: 1% auto;*/
+      /*  padding: 0;*/
       /*}*/
+
+      textarea {
+        width: 100%;
+      }
+
       textarea#php {
         font-family: Cica, Consolas, monospace;
-        font-size: 14pt !important;
-        width: 95%;
-        height: 500px;
+        font-size: 12pt !important;
+        width: 100%;
+        height: 100%;
         background-color: #333;
         color: #EFEFEF;
-        margin: 1%;
-        padding: 1%;
+        /*margin: 1%;*/
+        /*padding: 1%;*/
         resize: vertical;
       }
+
       #php-response {
-        font-size: 14pt !important;
+        font-size: 12pt !important;
         font-family: Cica, Consolas, monospace;
         color: #FFF;
-        height: 500px;
         overflow: auto;
         word-wrap: break-word;
         word-break: break-all;
         text-align: justify;
         background-color: #333333;
       }
+
       #php-response.error {
         font-family: Cica, Consolas, monospace;
         color: red;
-        height: 500px;
+        height: 100%;
         word-wrap: break-word;
         word-break: break-all;
       }
+
       #current-php-version, #current-working-directory {
         border: 1px solid #DDD;
         padding: 3pt;
@@ -92,65 +74,74 @@
     </style>
   </head>
   <body>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-6 col-md-8 order-1 order-md-1 ">
+          <div>
+            <p>選択中のPHP実行パス</p>
+            <p id="current-php-version"></p>
+            <p>選択中のPHP実行パス</p>
+            <p id="current-working-directory"></p>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-4  order-2 order-md-1 ">
+          <div id="header-menu">
+            <p id="save-temp-source">
+              一時保存する
+            </p>
+          </div>
+        </div>
+      </div>
 
-    <div>
-      <p>選択中のPHP実行パス</p>
-      <p id="current-php-version"></p>
-      <p>選択中のPHP実行パス</p>
-      <p id="current-working-directory"></p>
+
+      <div class="row m-2">
+        <div class="col-sm-6 col-md-7 alert alert-primary order-2 order-md-2 bg-secondary text-white overflow-auto">
+          <pre class="" id="php-response"></pre>
+        </div>
+        <div class="col-sm-6 col-md-5 alert alert-info  order-2 order-md-1 bg-light">
+          <textarea class="form-control" spellcheck="false" id="php"></textarea>
+        </div>
+      </div>
     </div>
-
-
-
-    <div id="header-menu">
-      <p id="save-temp-source">
-        一時保存する
-      </p>
-    </div>
-
-    <table>
-      <tr>
-        <th>input</th>
-        <th>output</th>
-      </tr>
-      <tr>
-        <td>
-          <label for="php">
-            <textarea spellcheck="false" id="php"></textarea>
-          </label>
-        </td>
-        <td><div id="php-response"></div></td>
-      </tr>
-    </table>
-
-
     <script>
-      function OnTabKey( e, obj ){
+      function OnTabKey(e, obj) {
 
         // タブキーが押された時以外は即リターン
-        if( e.keyCode!==9 ){ return; }
-
+        if (e.keyCode !== 9) {
+          return;
+        }
         // タブキーを押したときのデフォルトの挙動を止める
         e.preventDefault();
 
         // 現在のカーソルの位置と、カーソルの左右の文字列を取得しておく
         const cursorPosition = obj.selectionStart;
         console.log(cursorPosition);
-        const cursorLeft     = obj.value.substring( 0, cursorPosition );
+        const cursorLeft = obj.value.substring(0, cursorPosition);
         console.log(obj.value.length)
-        const cursorRight    = obj.value.substring( cursorPosition , obj.value.length);
+        const cursorRight = obj.value.substring(cursorPosition, obj.value.length);
 
         // テキストエリアの中身を、
         // 「取得しておいたカーソルの左側」+「タブ」+「取得しておいたカーソルの右側」
         // という状態にする。
-        obj.value = cursorLeft+"\t"+cursorRight;
+        obj.value = cursorLeft + "\t" + cursorRight;
 
         // カーソルの位置を入力したタブの後ろにする
-        obj.selectionEnd = cursorPosition+1;
+        obj.selectionEnd = cursorPosition + 1;
       }
 
       // 対象となるテキストエリアにonkeydownイベントを追加する
-      document.getElementById( "php" ).onkeydown = function( e ){ OnTabKey( e, this ); }
+      document.getElementById("php").onkeydown = function (e) {
+        OnTabKey(e, this);
+      }
+
+      function changedMethod(e) {
+        const currentWindowMaxHeight = window.innerHeight;
+        document.getElementById("php").style.height = currentWindowMaxHeight * 0.7 + "px";
+        document.getElementById("php-response").style.height = currentWindowMaxHeight * 0.7 + "px";
+      }
+
+      window.addEventListener("load", changedMethod);
+      window.addEventListener("resize", changedMethod);
     </script>
     <script src="./renderer.js"></script>
   </body>

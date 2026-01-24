@@ -4,6 +4,16 @@ const exec = require('child_process').exec;
 const fs = require("fs");
 const fsPromises = require("fs").promises;
 
+/*
+*
+* 第一引数がおそらく監視したいディレクトリフォルダ
+* 第二引数がおそらくElectronの実行フォルダ
+*
+* */
+require('electron-reload')(__dirname, {
+  electron: require('${__dirname}/../../node_modules/electron')
+});
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -299,5 +309,6 @@ function formatResponseAsHtml(message) {
     .replace(/　/g, "&emsp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-  return temp.replace(/\r\n|\n/g, "<br>")
+  return temp;
+  // return temp.replace(/\r\n|\n/g, "<br>")
 }
