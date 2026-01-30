@@ -1,6 +1,7 @@
 const {app, BrowserWindow, ipcMain, dialog, Menu} = require('electron');
 const path = require('node:path');
 const exec = require('child_process').exec;
+const spawn = require("child_process").spawn;
 const fs = require("fs");
 const fsPromises = require("fs").promises;
 
@@ -26,7 +27,7 @@ function handleSetTitle(event, title) {
 }
 
 function toMainProcess(event, message) {
-  console.log("From Renderer Process: " + message)
+  // console.log("From Renderer Process: " + message)
   const webContents = event.sender
   const win = BrowserWindow.fromWebContents(webContents)
   webContents.send("to-renderer-process", message)
@@ -37,11 +38,12 @@ function toMainProcess(event, message) {
 let phpPath = null;
 // 作業用ディレクトリの指定
 let cwd = process.cwd();
+let currentProcess = null;
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 720,
+    width: 1280 * 1.2,
+    height: 720 * 1.2,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -77,25 +79,27 @@ const createWindow = () => {
       ],
     })
     .then((result) => {
-      console.log("select php executable result: ==>", result);
+      // console.log("select php executable result: ==>", result);
       if (result.canceled) return;
       // ここでPHP実行ファイルのパスを取得する
       phpPath = result.filePaths[0];
     })
-    .catch((err) => console.log(`Error: ${err}`));
+    .catch((err) => {
+      console.log(`Error: ${err}`)
+    });
   }
   ipcMain.handle("select-php-executable", selectPhpExecutable);
 
   // 一時ソースの保存処理
   ipcMain.handle("save-temp-source", function (event, tempSource) {
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!tempSource: ", tempSource);
+    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!tempSource: ", tempSource);
     const fileName = "temp.php";
     const filePath = path.join(cwd, fileName);
     return fsPromises.writeFile(filePath, tempSource).then(function (data) {
-      console.log("data: ", data);
+      // console.log("data: ", data);
       return true;
     }).catch(function (error) {
-      console.log("error: ", error);
+      // console.log("error: ", error);
       return false;
     })
   });
@@ -115,11 +119,8 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+let ProcessList = [];
 app.whenReady().then(() => {
-
-
-
-
   ipcMain.on('set-title', handleSetTitle)
   ipcMain.handle("to-main-process", function (event, message) {
     return "The message that you sent is: " + message;
@@ -135,14 +136,23 @@ app.whenReady().then(() => {
       if (result.canceled) return;
       // ここでディレクトリのパスを取得する
       cwd = result.filePaths[0];
-      console.log("cwd => ", cwd)
+      // console.log("cwd => ", cwd)
       return result.filePaths[0];
     }).catch((err) =>  {
-      console.log(`Error: ${err}`)
+      // console.log(`Error: ${err}`)
     })
   });
   ipcMain.handle("execute-php", function (event, message) {
-    const promise =  new Promise((resolve, reject) => {
+    // console.log("ProcessList ==> ", ProcessList);
+    ProcessList = ProcessList.filter(function (child) {
+      child.process.kill("SIGINT");
+      child.process.kill("SIGQUIT")
+      child.process.kill("SIGTERM");
+      if (child.killed === true || child.pid === null) {
+        return false;
+      }
+    });
+    return new Promise((resolve, reject) => {
       const fileNameExecuted = path.join(cwd, ".executed.php");
       message = "<?php " + message + " ?>";
       if (fs.existsSync(fileNameExecuted)) {
@@ -162,19 +172,55 @@ app.whenReady().then(() => {
           selectedPHPPath = phpPath
         }
       }
-      console.log("selectedPHPPath => ", selectedPHPPath)
-      console.log("cwd => ", cwd)
+      // console.log("selectedPHPPath => ", selectedPHPPath)
+      // console.log("cwd => ", cwd)
+      const child = spawn(selectedPHPPath, [fileNameExecuted], {cwd: cwd});
+      child.on("exit", function (e) {
+        // console.log("Process died.");
+        // console.log(e);
+      })
+      // const currentPid = child.pid
+      // // console.log(currentPid);
+      // フロントエンドへ送信できる最大のパケット数
+      const maxPacketSize = 1024 * 5000;
+      child.stdout.on("data", (function (maxPacketSize, child) {
+          let currentPacketSize = 0;
+          return function (packet) {
+            console.log("packet.length ==> ", packet.length);
+            currentPacketSize += packet.length;
+            if (currentPacketSize >= maxPacketSize) {
+              console.log("started to kill process because exceeded max packet size");
+              child.kill("SIGTERM");
+              child.kill("SIGQUIT");
+              child.kill("SIGINT");
+              console.log("completed to kill process");
+              return;
+            }
+            return mainWindow.webContents.send("fetch-packets-executed-result", packet.toString());
+          }
+        })(maxPacketSize, child)
+      );
+
+      child.stderr.on("data", function(errorPacket) {
+        // console.log("child.stderr.on dataメソッドハッセい");
+        return mainWindow.webContents.send("fetch-error-packets-executed-result", errorPacket.toString());
+      });
+      ProcessList.push({
+        process: child,
+        startedAt: Math.floor(Date.now() / 1000)
+      });
+
       return exec(selectedPHPPath + " " + fileNameExecuted, {
         // 実行ディレクトリを指定する
         cwd: cwd,
-      },function (error, stdout, stderr) {
+      }, function (error, stdout, stderr) {
         if (error) {
-          console.log("error.code ==> ", error.code)
-          console.log("=============");
-          console.log(error);
-          console.log("##############")
-          console.log("stderr", stderr, "=====")
-          console.log("-------------");
+          // console.log("error.code ==> ", error.code)
+          // console.log("=============");
+          // console.log(error);
+          // console.log("##############")
+          // console.log("stderr", stderr, "=====")
+          // console.log("-------------");
           outputResult["stderr"] = formatResponseAsHtml(stderr)
           return resolve(outputResult)
           // return reject(new Error(stderr))
@@ -188,7 +234,6 @@ app.whenReady().then(() => {
         }
       });
     });
-    return promise;
   });
   const mainWindow = createWindow();
 
@@ -212,7 +257,7 @@ app.whenReady().then(() => {
               ],
             })
             .then((result) => {
-              console.log("select php executable result: ==>", result);
+              // console.log("select php executable result: ==>", result);
               if (result.canceled) return;
               // ここでPHP実行ファイルのパスを取得する
               phpPath = result.filePaths[0];
@@ -220,7 +265,9 @@ app.whenReady().then(() => {
             }).then(function(data) {
               return mainWindow.webContents.send("completed-selecting-php-executable", data);
             })
-            .catch((err) => console.log(`Error: ${err}`));
+            .catch((err) =>  {
+              console.log(`Error: ${err}`)
+            });
           }
         },
         {
@@ -236,7 +283,7 @@ app.whenReady().then(() => {
               }
               // ここでディレクトリのパスを取得する
               cwd = result.filePaths[0];
-              console.log("cwd => ", cwd)
+              // console.log("cwd => ", cwd)
               // 実行ディレクトリのパスが確定したら隠しディレクトリを作成する
               let createdAt = "";
               let today = new Date();
@@ -244,16 +291,16 @@ app.whenReady().then(() => {
               // 作成した日にちの隠しディレクトリを作成する
               let hiddenDir = path.join(cwd, "." + createdAt);
               return fsPromises.mkdir(hiddenDir, {recursive: true}).then(function (isCreated) {
-                console.log("作業用隠しディレクトリの作成に成功しました");
+                // console.log("作業用隠しディレクトリの作成に成功しました");
                 return Promise.resolve(result.filePaths[0]);
               }).catch((err) => {
-                console.log(`Error: ${err}`)
+                // console.log(`Error: ${err}`)
                 return Promise.reject(new Error(err))
               });
             }).then(function(data) {
               return mainWindow.webContents.send("completed-selecting-cwd", data);
             }).catch((err) =>  {
-              console.log(`Error: ${err}`)
+              // console.log(`Error: ${err}`)
             })
           }
         },

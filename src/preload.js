@@ -25,4 +25,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log("completedSelectingCwd: ", path);
     return callback(event, path);
   }),
+  // ---------------------------------------------------------------------
+  // バックグラウンドで実行されたPHPコマンドの実行結果を適当なサイズのパケットとして
+  // main.jsから取得してくる
+  // ---------------------------------------------------------------------
+  fetchPacketsExecutedResult: (callback) => ipcRenderer.on('fetch-packets-executed-result', function (event, packet) {
+    console.log("event named fetch-packets-executed-result ===> ", packet);
+    return callback(event, packet);
+  }),
+  fetchErrorPacketsExecutedResult: (callback) => ipcRenderer.on('fetch-error-packets-executed-result', function (event, packet) {
+    console.log("event named fetch-error-packets-executed-result ===> ", packet);
+    return callback(event, packet);
+  }),
 })

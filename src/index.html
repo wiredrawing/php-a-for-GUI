@@ -2,19 +2,25 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8"/>
-    <title>Hello World! これはElectronアプリケーション 第一号です.</title>
+    <title>PHP Interactive shell</title>
     <link rel="stylesheet" href="./dist/css/bootstrap.css"/>
     <script type="text/javascript" src="./dist/js/bootstrap.bundle.js"></script>
     <script type="text/javascript" src="./dist/js/bootstrap.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=Fira+Code:wght@300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=M+PLUS+1+Code:wght@100..700&family=M+PLUS+1p&family=M+PLUS+2:wght@100..900&family=Noto+Sans+JP:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Sawarabi+Gothic&family=Zen+Kaku+Gothic+New&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=Fira+Code:wght@300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=M+PLUS+1p&family=M+PLUS+2:wght@100..900&family=Noto+Sans+JP:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Sawarabi+Gothic&family=Zen+Kaku+Gothic+New&display=swap" rel="stylesheet">
     <style>
       * {
-        font-family: "Helvetica Neue",
-        Arial,
-        "Hiragino Kaku Gothic ProN",
-        "Hiragino Sans",
-        Meiryo,
-        sans-serif;
-        /*font-family: 'ヒラギノ角ゴ Pro W3','Hiragino Kaku Gothic Pro',Osaka,Verdana, Segoe WPC, Segoe UI, Yu Gothic UI, Meiryo UI, sans-serif;*/
+        font-family: "M PLUS 1 Code", monospace !important;
         font-weight: 450 !important;
         font-size: 11pt !important;
         /*letter-spacing: 0.05rem;*/
@@ -23,32 +29,27 @@
         tab-size: 4;
       }
 
-      /*body {*/
-      /*  width: 98%;*/
-      /*  !*border: 1px solid #000;*!*/
-      /*  margin: 1% auto;*/
-      /*  padding: 0;*/
-      /*}*/
 
       textarea {
         width: 100%;
       }
 
       textarea#php {
-        font-family: Cica, Consolas, monospace;
+        font-family: "M PLUS 1 Code", monospace !important;
+        font-optical-sizing: auto;
+        font-style: normal;
         font-size: 12pt !important;
         width: 100%;
         height: 100%;
         background-color: #333;
         color: #EFEFEF;
-        /*margin: 1%;*/
-        /*padding: 1%;*/
         resize: vertical;
       }
 
       #php-response {
         font-size: 12pt !important;
-        font-family: Cica, Consolas, monospace;
+        font-family: "M PLUS 1 Code", monospace !important;
+        /*font-family: Cica, Consolas, monospace;*/
         color: #FFF;
         overflow: auto;
         word-wrap: break-word;
@@ -94,12 +95,17 @@
       </div>
 
 
-      <div class="row m-2">
-        <div class="col-sm-6 col-md-7 alert alert-primary order-2 order-md-2 bg-secondary text-white overflow-auto">
-          <pre class="" id="php-response"></pre>
+      <div class="row p-0 m-0">
+        <div class=" p-0 m-0 col-sm-6 col-md-6  order-2 order-md-2 text-white overflow-auto">
+          <pre class="bg-dark" id="php-response"></pre>
         </div>
-        <div class="col-sm-6 col-md-5 alert alert-info  order-2 order-md-1 bg-light">
-          <textarea class="form-control" spellcheck="false" id="php"></textarea>
+        <div class="col-sm-6 col-md-6  order-2 order-md-1">
+          <textarea class="form-control rounded-0" spellcheck="false" id="php"></textarea>
+        </div>
+      </div>
+      <div class="row p-0 m-0">
+        <div class="col-12  p-0 m-0" id="packets">
+
         </div>
       </div>
     </div>
@@ -136,8 +142,8 @@
 
       function changedMethod(e) {
         const currentWindowMaxHeight = window.innerHeight;
-        document.getElementById("php").style.height = currentWindowMaxHeight * 0.7 + "px";
-        document.getElementById("php-response").style.height = currentWindowMaxHeight * 0.7 + "px";
+        document.getElementById("php").style.height = currentWindowMaxHeight  + "px";
+        document.getElementById("php-response").style.height = currentWindowMaxHeight + "px";
       }
 
       window.addEventListener("load", changedMethod);

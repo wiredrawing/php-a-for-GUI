@@ -4,22 +4,32 @@ const phpMessage = document.getElementById("php");
 const responseDom = document.getElementById("php-response");
 // 一時ソースを保存するボタン
 const saveTempSource = document.getElementById("save-temp-source");
+
+// --------------------------------------------------------------------
+// エディタ側でEnterキーを押下したタイミングをリセットするためのキー
+// --------------------------------------------------------------------
+let execution = 1;
+
 phpMessage.addEventListener("keyup", (e) => {
   if (e.key !== "Enter" || e.ctrlKey) {
     return false;
   }
-  responseDom.innerHTML = ""
+  execution = execution + 1;
+  if (execution % 2 === 1) {
+    responseDom.textContent = "";
+  }
+  responseDom.innerHTML = "";
   window.electronAPI.executePHP(e.target.value).then(function (data) {
     console.log("data ===> ", data, "<=== end data");
     if (data["stdout"]) {
-      responseDom.innerHTML = data["stdout"]
+      // responseDom.innerHTML = data["stdout"]
       responseDom.classList.remove('error') //hideという要素をinfoのクラスに追加する
     } else {
       if (data["stderr"]) {
-        responseDom.innerHTML = data["stderr"]
-        if (!responseDom.classList.contains('error')) { ////hideという要素がinfoにない場合に実行する。そうしないとたくさん追加されるため
-          responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する
-        }
+        // responseDom.innerHTML = data["stderr"]
+        // if (!responseDom.classList.contains('error')) { ////hideという要素がinfoにない場合に実行する。そうしないとたくさん追加されるため
+        //   responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する
+        // }
       }
     }
     const scrollTarget = document.getElementById("php-response");
@@ -85,7 +95,9 @@ saveTempSource.addEventListener("click", function (e) {
 // });
 
 
+// ----------------------------------------------------------------
 // メインプロセスからの通知を常に監視してくれる
+// ----------------------------------------------------------------
 const currentPHPVersion = document.getElementById("current-php-version");
 window.electronAPI.completedSelectingPHPExecutable(function(e, path ){
   currentPHPVersion.innerHTML = path;
@@ -95,3 +107,21 @@ const currentCwd = document.getElementById("current-working-directory");
 window.electronAPI.completedSelectingCwd(function(e, path ) {
   currentCwd.innerHTML = path;
 });
+
+let number = 0;
+window.electronAPI.fetchPacketsExecutedResult(function(e, packet) {
+  console.log("これがパケットだよ!!!!!!!! ===> ", packet, ": number => ", number);
+  responseDom.classList.remove('error') //hideという要素をinfoのクラスに追加する
+  responseDom.textContent += packet;
+  // if (execution % 2 === 1) {
+  //   document.getElementById("packets").textContent = packet
+  // } else {
+  //   document.getElementById("packets").textContent += packet;
+  // }
+});
+window.electronAPI.fetchErrorPacketsExecutedResult(function (e, packet) {
+  if (!responseDom.classList.contains('error')) { ////hideという要素がinfoにない場合に実行する。そうしないとたくさん追加されるため
+    responseDom.classList.add('error') //hideという要素をinfoのクラスに追加する
+  }
+  responseDom.textContent += packet;
+})
